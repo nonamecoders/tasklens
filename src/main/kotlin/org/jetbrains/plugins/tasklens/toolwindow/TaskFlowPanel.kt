@@ -2,6 +2,7 @@ package org.jetbrains.plugins.tasklens.toolwindow
 
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.components.service
+import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.treeStructure.Tree
@@ -69,11 +70,15 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
                 )
 
                 for (daoCall in serviceCall.daoCalls) {
-                    serviceNode.add(
+                    val callSiteNode = DefaultMutableTreeNode(
+                        CallSiteNodeData(daoCall, "${daoCall.className}.${daoCall.methodName}()")
+                    )
+                    callSiteNode.add(
                         DefaultMutableTreeNode(
-                            DaoNodeData(daoCall, "DAO: ${daoCall.className}.${daoCall.methodName}")
+                            DaoNodeData(daoCall, "DAO: ${daoCall.className}")
                         )
                     )
+                    serviceNode.add(callSiteNode)
                 }
 
                 taskNode.add(serviceNode)
@@ -107,6 +112,11 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
         when (val data = node.userObject) {
             is TaskNodeData -> data.task.navigationElement.element?.navigate(true)
             is ServiceNodeData -> data.serviceCall.navigationElement.element?.navigate(true)
+            is CallSiteNodeData -> {
+                val callSite = data.daoCall.callSitePointer.element ?: return
+                val vFile = callSite.containingFile?.virtualFile ?: return
+                OpenFileDescriptor(project, vFile, callSite.textOffset).navigate(true)
+            }
             is DaoNodeData -> data.daoCall.navigationElement.element?.navigate(true)
         }
     }
@@ -116,6 +126,10 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
     }
 
     private data class ServiceNodeData(val serviceCall: ServiceCallInfo, val label: String) {
+        override fun toString() = label
+    }
+
+    private data class CallSiteNodeData(val daoCall: DaoCallInfo, val label: String) {
         override fun toString() = label
     }
 

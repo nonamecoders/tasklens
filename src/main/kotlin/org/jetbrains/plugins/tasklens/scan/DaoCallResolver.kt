@@ -32,6 +32,7 @@ class DaoCallResolver(private val project: Project) {
                             DaoCallInfo(
                                 className = containingClass.name ?: "Unknown",
                                 methodName = resolvedMethod.name,
+                                callSitePointer = smartPointerManager.createSmartPsiElementPointer(expression),
                                 navigationElement = smartPointerManager.createSmartPsiElementPointer(resolvedMethod)
                             )
                         )
