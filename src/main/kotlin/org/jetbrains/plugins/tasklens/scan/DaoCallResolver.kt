@@ -35,7 +35,7 @@ class DaoCallResolver(private val project: Project) {
                                 navigationElement = smartPointerManager.createSmartPsiElementPointer(resolvedMethod)
                             )
                         )
-                    } else if (containingClass == method.containingClass) {
+                    } else if (containingClass.qualifiedName == method.containingClass?.qualifiedName) {
                         // 같은 클래스 내 다른 메서드(private 위임 메서드 등)도 한 단계 추적
                         scanMethod(resolvedMethod)
                     }
