@@ -12,9 +12,12 @@ import org.jetbrains.plugins.tasklens.model.DaoCallInfo
 
 class DaoCallResolver(private val project: Project) {
 
+    private val mybatisSqlResolver = MyBatisSqlResolver(project)
+
     companion object {
         private const val REPOSITORY_ANNOTATION = "org.springframework.stereotype.Repository"
         private const val SERVICE_ANNOTATION = "org.springframework.stereotype.Service"
+        private const val MYBATIS_MAPPER_ANNOTATION = "org.apache.ibatis.annotations.Mapper"
     }
 
     fun resolve(method: PsiMethod): List<DaoCallInfo> {
@@ -39,7 +42,8 @@ class DaoCallResolver(private val project: Project) {
                                     className = containingClass.name ?: "Unknown",
                                     methodName = resolvedMethod.name,
                                     callSitePointer = smartPointerManager.createSmartPsiElementPointer(expression),
-                                    navigationElement = smartPointerManager.createSmartPsiElementPointer(resolvedMethod)
+                                    navigationElement = smartPointerManager.createSmartPsiElementPointer(resolvedMethod),
+                                    mybatisSqlInfo = mybatisSqlResolver.resolve(containingClass, resolvedMethod)
                                 )
                             )
                         }
@@ -82,6 +86,7 @@ class DaoCallResolver(private val project: Project) {
         return name.endsWith("Mapper") ||
                 name.endsWith("Repository") ||
                 name.endsWith("Dao") ||
-                psiClass.getAnnotation(REPOSITORY_ANNOTATION) != null
+                psiClass.getAnnotation(REPOSITORY_ANNOTATION) != null ||
+                psiClass.getAnnotation(MYBATIS_MAPPER_ANNOTATION) != null
     }
 }

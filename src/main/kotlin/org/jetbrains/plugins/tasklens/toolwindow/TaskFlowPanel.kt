@@ -7,6 +7,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.treeStructure.Tree
 import org.jetbrains.plugins.tasklens.model.DaoCallInfo
+import org.jetbrains.plugins.tasklens.model.MyBatisSqlInfo
 import org.jetbrains.plugins.tasklens.model.ScheduledTaskInfo
 import org.jetbrains.plugins.tasklens.model.ServiceCallInfo
 import org.jetbrains.plugins.tasklens.service.TaskFlowProjectService
@@ -73,11 +74,17 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
                     val callSiteNode = DefaultMutableTreeNode(
                         CallSiteNodeData(daoCall, "${daoCall.className}.${daoCall.methodName}()")
                     )
-                    callSiteNode.add(
-                        DefaultMutableTreeNode(
-                            DaoNodeData(daoCall, "DAO: ${daoCall.className}")
-                        )
+                    val daoNode = DefaultMutableTreeNode(
+                        DaoNodeData(daoCall, "DAO: ${daoCall.className}")
                     )
+                    daoCall.mybatisSqlInfo?.let { sql ->
+                        daoNode.add(
+                            DefaultMutableTreeNode(
+                                MyBatisSqlNodeData(sql, "${sql.sqlId} [${sql.xmlFileName}]")
+                            )
+                        )
+                    }
+                    callSiteNode.add(daoNode)
                     serviceNode.add(callSiteNode)
                 }
 
@@ -118,6 +125,11 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
                 OpenFileDescriptor(project, vFile, callSite.textOffset).navigate(true)
             }
             is DaoNodeData -> data.daoCall.navigationElement.element?.navigate(true)
+            is MyBatisSqlNodeData -> {
+                val element = data.sqlInfo.navigationElement.element ?: return
+                val vFile = element.containingFile?.virtualFile ?: return
+                OpenFileDescriptor(project, vFile, element.textOffset).navigate(true)
+            }
         }
     }
 
@@ -134,6 +146,10 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
     }
 
     private data class DaoNodeData(val daoCall: DaoCallInfo, val label: String) {
+        override fun toString() = label
+    }
+
+    private data class MyBatisSqlNodeData(val sqlInfo: MyBatisSqlInfo, val label: String) {
         override fun toString() = label
     }
 }

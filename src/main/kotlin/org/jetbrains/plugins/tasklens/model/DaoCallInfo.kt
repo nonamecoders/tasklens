@@ -8,5 +8,6 @@ data class DaoCallInfo(
     val className: String,
     val methodName: String,
     val callSitePointer: SmartPsiElementPointer<PsiMethodCallExpression>,
-    val navigationElement: SmartPsiElementPointer<PsiMethod>
+    val navigationElement: SmartPsiElementPointer<PsiMethod>,
+    val mybatisSqlInfo: MyBatisSqlInfo? = null
 )
