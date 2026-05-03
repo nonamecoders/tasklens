@@ -25,6 +25,10 @@ class ScheduledMethodScanner(private val project: Project) {
 
         return AnnotatedMembersSearch.search(annotationClass, projectScope)
             .filterIsInstance<PsiMethod>()
+            .sortedWith(compareBy(
+                { it.containingFile?.virtualFile?.path ?: "" },
+                { it.textOffset }
+            ))
             .mapNotNull { method ->
                 val psiClass = method.containingClass ?: return@mapNotNull null
                 val annotation = method.getAnnotation(SCHEDULED_FQN) ?: return@mapNotNull null
