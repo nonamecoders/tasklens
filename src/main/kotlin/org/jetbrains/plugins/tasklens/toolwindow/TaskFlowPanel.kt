@@ -59,35 +59,43 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
     private fun updateTree(tasks: List<ScheduledTaskInfo>) {
         val root = DefaultMutableTreeNode("Scheduled Tasks (${tasks.size})")
 
-        for (task in tasks) {
-            val scheduleLabel = buildScheduleLabel(task)
-            val taskNode = DefaultMutableTreeNode(
-                NodeData.Task(task, "${task.className}.${task.methodName} [$scheduleLabel]")
+        for ((className, classTasks) in tasks.groupBy { it.className }) {
+            val classNode = DefaultMutableTreeNode(
+                NodeData.TaskClass(classTasks.first(), className)
             )
 
-            for (serviceCall in task.serviceCalls) {
-                val serviceNode = DefaultMutableTreeNode(
-                    NodeData.Service(serviceCall, "Service: ${serviceCall.className}.${serviceCall.methodName}")
+            for (task in classTasks) {
+                val scheduleLabel = buildScheduleLabel(task)
+                val taskNode = DefaultMutableTreeNode(
+                    NodeData.Task(task, "${task.methodName} [$scheduleLabel]")
                 )
 
-                for (daoCall in serviceCall.daoCalls) {
-                    val daoNode = DefaultMutableTreeNode(
-                        NodeData.Dao(daoCall, "${daoCall.className}.${daoCall.methodName}()")
+                for (serviceCall in task.serviceCalls) {
+                    val serviceNode = DefaultMutableTreeNode(
+                        NodeData.Service(serviceCall, "Service: ${serviceCall.className}.${serviceCall.methodName}")
                     )
-                    daoCall.mybatisSqlInfo?.let { sql ->
-                        daoNode.add(
-                            DefaultMutableTreeNode(
-                                NodeData.MyBatisSql(sql, "${sql.sqlType} ${sql.sqlId} [${sql.xmlFileName}]")
-                            )
+
+                    for (daoCall in serviceCall.daoCalls) {
+                        val daoNode = DefaultMutableTreeNode(
+                            NodeData.Dao(daoCall, "${daoCall.className}.${daoCall.methodName}()")
                         )
+                        daoCall.mybatisSqlInfo?.let { sql ->
+                            daoNode.add(
+                                DefaultMutableTreeNode(
+                                    NodeData.MyBatisSql(sql, "${sql.sqlType} ${sql.sqlId} [${sql.xmlFileName}]")
+                                )
+                            )
+                        }
+                        serviceNode.add(daoNode)
                     }
-                    serviceNode.add(daoNode)
+
+                    taskNode.add(serviceNode)
                 }
 
-                taskNode.add(serviceNode)
+                classNode.add(taskNode)
             }
 
-            root.add(taskNode)
+            root.add(classNode)
         }
 
         tree.model = DefaultTreeModel(root)
@@ -113,6 +121,7 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
         val node = path.lastPathComponent as? DefaultMutableTreeNode ?: return
 
         when (val data = node.userObject) {
+            is NodeData.TaskClass -> data.task.navigationElement.element?.containingClass?.navigate(true)
             is NodeData.Task -> data.task.navigationElement.element?.navigate(true)
             is NodeData.Service -> data.serviceCall.navigationElement.element?.navigate(true)
             is NodeData.Dao -> data.daoCall.navigationElement.element?.navigate(true)
@@ -127,6 +136,7 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
     private sealed class NodeData(val label: String) {
         override fun toString() = label
 
+        class TaskClass(val task: ScheduledTaskInfo, label: String) : NodeData(label)
         class Task(val task: ScheduledTaskInfo, label: String) : NodeData(label)
         class Service(val serviceCall: ServiceCallInfo, label: String) : NodeData(label)
         class Dao(val daoCall: DaoCallInfo, label: String) : NodeData(label)
