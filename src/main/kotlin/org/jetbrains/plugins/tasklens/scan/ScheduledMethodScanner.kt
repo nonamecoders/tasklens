@@ -59,9 +59,13 @@ class ScheduledMethodScanner(private val project: Project) {
         return results
     }
 
-    private fun resolveScheduleValue(numericText: String?, stringText: String?): String? =
-        numericText?.takeIf { it != UNSET_NUMERIC && it != DISABLED_NUMERIC && it.isNotBlank() }
-            ?: stringText?.takeIf { it.isNotBlank() }
+    private fun resolveScheduleValue(numericText: String?, stringText: String?): String? {
+        val normalized = numericText?.trimEnd('L', 'l')
+        return if (normalized != null && normalized != UNSET_NUMERIC && normalized != DISABLED_NUMERIC && normalized.isNotBlank())
+            normalized
+        else
+            stringText?.takeIf { it.isNotBlank() }
+    }
 
     private fun String.extractStringValue(): String = trim().removeSurrounding("\"")
 }

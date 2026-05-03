@@ -124,13 +124,12 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
         }
     }
 
-    private sealed class NodeData {
-        abstract val label: String
+    private sealed class NodeData(val label: String) {
         override fun toString() = label
 
-        data class Task(val task: ScheduledTaskInfo, override val label: String) : NodeData()
-        data class Service(val serviceCall: ServiceCallInfo, override val label: String) : NodeData()
-        data class Dao(val daoCall: DaoCallInfo, override val label: String) : NodeData()
-        data class MyBatisSql(val sqlInfo: MyBatisSqlInfo, override val label: String) : NodeData()
+        class Task(val task: ScheduledTaskInfo, label: String) : NodeData(label)
+        class Service(val serviceCall: ServiceCallInfo, label: String) : NodeData(label)
+        class Dao(val daoCall: DaoCallInfo, label: String) : NodeData(label)
+        class MyBatisSql(val sqlInfo: MyBatisSqlInfo, label: String) : NodeData(label)
     }
 }
