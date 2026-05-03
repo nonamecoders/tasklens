@@ -18,11 +18,12 @@ class ScheduledMethodScanner(private val project: Project) {
 
     fun scan(): List<ScheduledTaskInfo> {
         val smartPointerManager = SmartPointerManager.getInstance(project)
-        val scope = GlobalSearchScope.projectScope(project)
-        val annotationClass = JavaPsiFacade.getInstance(project).findClass(SCHEDULED_FQN, scope)
+        val projectScope = GlobalSearchScope.projectScope(project)
+        val annotationClass = JavaPsiFacade.getInstance(project)
+            .findClass(SCHEDULED_FQN, GlobalSearchScope.allScope(project))
             ?: return emptyList()
 
-        return AnnotatedMembersSearch.search(annotationClass, scope)
+        return AnnotatedMembersSearch.search(annotationClass, projectScope)
             .filterIsInstance<PsiMethod>()
             .mapNotNull { method ->
                 val psiClass = method.containingClass ?: return@mapNotNull null
