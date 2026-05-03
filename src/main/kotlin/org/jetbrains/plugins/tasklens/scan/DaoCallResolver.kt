@@ -16,7 +16,6 @@ class DaoCallResolver(private val project: Project) {
 
     companion object {
         private const val REPOSITORY_ANNOTATION = "org.springframework.stereotype.Repository"
-        private const val SERVICE_ANNOTATION = "org.springframework.stereotype.Service"
         private const val MYBATIS_MAPPER_ANNOTATION = "org.apache.ibatis.annotations.Mapper"
     }
 
@@ -72,13 +71,6 @@ class DaoCallResolver(private val project: Project) {
 
         scanMethod(method)
         return results
-    }
-
-    private fun isServiceClass(psiClass: PsiClass): Boolean {
-        val name = psiClass.name ?: return false
-        if (name.endsWith("Service") || name.endsWith("ServiceImpl")) return true
-        if (psiClass.getAnnotation(SERVICE_ANNOTATION) != null) return true
-        return psiClass.interfaces.any { iface -> iface.name?.endsWith("Service") == true }
     }
 
     private fun isPersistenceClass(psiClass: PsiClass): Boolean {

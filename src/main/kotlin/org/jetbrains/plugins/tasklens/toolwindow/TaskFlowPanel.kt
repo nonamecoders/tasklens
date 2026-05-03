@@ -62,25 +62,25 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
         for (task in tasks) {
             val scheduleLabel = buildScheduleLabel(task)
             val taskNode = DefaultMutableTreeNode(
-                TaskNodeData(task, "${task.className}.${task.methodName} [$scheduleLabel]")
+                NodeData.Task(task, "${task.className}.${task.methodName} [$scheduleLabel]")
             )
 
             for (serviceCall in task.serviceCalls) {
                 val serviceNode = DefaultMutableTreeNode(
-                    ServiceNodeData(serviceCall, "Service: ${serviceCall.className}.${serviceCall.methodName}")
+                    NodeData.Service(serviceCall, "Service: ${serviceCall.className}.${serviceCall.methodName}")
                 )
 
                 for (daoCall in serviceCall.daoCalls) {
                     val callSiteNode = DefaultMutableTreeNode(
-                        CallSiteNodeData(daoCall, "${daoCall.className}.${daoCall.methodName}()")
+                        NodeData.CallSite(daoCall, "${daoCall.className}.${daoCall.methodName}()")
                     )
                     val daoNode = DefaultMutableTreeNode(
-                        DaoNodeData(daoCall, "DAO: ${daoCall.className}")
+                        NodeData.Dao(daoCall, "DAO: ${daoCall.className}")
                     )
                     daoCall.mybatisSqlInfo?.let { sql ->
                         daoNode.add(
                             DefaultMutableTreeNode(
-                                MyBatisSqlNodeData(sql, "${sql.sqlId} [${sql.xmlFileName}]")
+                                NodeData.MyBatisSql(sql, "${sql.sqlId} [${sql.xmlFileName}]")
                             )
                         )
                     }
@@ -117,15 +117,15 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
         val node = path.lastPathComponent as? DefaultMutableTreeNode ?: return
 
         when (val data = node.userObject) {
-            is TaskNodeData -> data.task.navigationElement.element?.navigate(true)
-            is ServiceNodeData -> data.serviceCall.navigationElement.element?.navigate(true)
-            is CallSiteNodeData -> {
+            is NodeData.Task -> data.task.navigationElement.element?.navigate(true)
+            is NodeData.Service -> data.serviceCall.navigationElement.element?.navigate(true)
+            is NodeData.CallSite -> {
                 val callSite = data.daoCall.callSitePointer.element ?: return
                 val vFile = callSite.containingFile?.virtualFile ?: return
                 OpenFileDescriptor(project, vFile, callSite.textOffset).navigate(true)
             }
-            is DaoNodeData -> data.daoCall.navigationElement.element?.navigate(true)
-            is MyBatisSqlNodeData -> {
+            is NodeData.Dao -> data.daoCall.navigationElement.element?.navigate(true)
+            is NodeData.MyBatisSql -> {
                 val element = data.sqlInfo.navigationElement.element ?: return
                 val vFile = element.containingFile?.virtualFile ?: return
                 OpenFileDescriptor(project, vFile, element.textOffset).navigate(true)
@@ -133,23 +133,14 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
         }
     }
 
-    private data class TaskNodeData(val task: ScheduledTaskInfo, val label: String) {
+    private sealed class NodeData {
+        abstract val label: String
         override fun toString() = label
-    }
 
-    private data class ServiceNodeData(val serviceCall: ServiceCallInfo, val label: String) {
-        override fun toString() = label
-    }
-
-    private data class CallSiteNodeData(val daoCall: DaoCallInfo, val label: String) {
-        override fun toString() = label
-    }
-
-    private data class DaoNodeData(val daoCall: DaoCallInfo, val label: String) {
-        override fun toString() = label
-    }
-
-    private data class MyBatisSqlNodeData(val sqlInfo: MyBatisSqlInfo, val label: String) {
-        override fun toString() = label
+        data class Task(val task: ScheduledTaskInfo, override val label: String) : NodeData()
+        data class Service(val serviceCall: ServiceCallInfo, override val label: String) : NodeData()
+        data class CallSite(val daoCall: DaoCallInfo, override val label: String) : NodeData()
+        data class Dao(val daoCall: DaoCallInfo, override val label: String) : NodeData()
+        data class MyBatisSql(val sqlInfo: MyBatisSqlInfo, override val label: String) : NodeData()
     }
 }
