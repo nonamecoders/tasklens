@@ -71,21 +71,17 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
                 )
 
                 for (daoCall in serviceCall.daoCalls) {
-                    val callSiteNode = DefaultMutableTreeNode(
-                        NodeData.CallSite(daoCall, "${daoCall.className}.${daoCall.methodName}()")
-                    )
                     val daoNode = DefaultMutableTreeNode(
-                        NodeData.Dao(daoCall, "DAO: ${daoCall.className}")
+                        NodeData.Dao(daoCall, "${daoCall.className}.${daoCall.methodName}()")
                     )
                     daoCall.mybatisSqlInfo?.let { sql ->
                         daoNode.add(
                             DefaultMutableTreeNode(
-                                NodeData.MyBatisSql(sql, "${sql.sqlId} [${sql.xmlFileName}]")
+                                NodeData.MyBatisSql(sql, "${sql.sqlType} ${sql.sqlId} [${sql.xmlFileName}]")
                             )
                         )
                     }
-                    callSiteNode.add(daoNode)
-                    serviceNode.add(callSiteNode)
+                    serviceNode.add(daoNode)
                 }
 
                 taskNode.add(serviceNode)
@@ -119,11 +115,6 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
         when (val data = node.userObject) {
             is NodeData.Task -> data.task.navigationElement.element?.navigate(true)
             is NodeData.Service -> data.serviceCall.navigationElement.element?.navigate(true)
-            is NodeData.CallSite -> {
-                val callSite = data.daoCall.callSitePointer.element ?: return
-                val vFile = callSite.containingFile?.virtualFile ?: return
-                OpenFileDescriptor(project, vFile, callSite.textOffset).navigate(true)
-            }
             is NodeData.Dao -> data.daoCall.navigationElement.element?.navigate(true)
             is NodeData.MyBatisSql -> {
                 val element = data.sqlInfo.navigationElement.element ?: return
@@ -139,7 +130,6 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
 
         data class Task(val task: ScheduledTaskInfo, override val label: String) : NodeData()
         data class Service(val serviceCall: ServiceCallInfo, override val label: String) : NodeData()
-        data class CallSite(val daoCall: DaoCallInfo, override val label: String) : NodeData()
         data class Dao(val daoCall: DaoCallInfo, override val label: String) : NodeData()
         data class MyBatisSql(val sqlInfo: MyBatisSqlInfo, override val label: String) : NodeData()
     }
