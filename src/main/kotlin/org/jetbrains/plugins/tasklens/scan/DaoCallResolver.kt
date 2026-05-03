@@ -22,6 +22,7 @@ class DaoCallResolver(private val project: Project) {
     fun resolve(method: PsiMethod): List<DaoCallInfo> {
         val results = mutableListOf<DaoCallInfo>()
         val smartPointerManager = SmartPointerManager.getInstance(project)
+        val scope = GlobalSearchScope.projectScope(project)
         val visited = mutableSetOf<String>()
 
         fun methodKey(m: PsiMethod) = "${m.containingClass?.qualifiedName}#${m.name}#${m.parameterList.parametersCount}"
@@ -51,9 +52,7 @@ class DaoCallResolver(private val project: Project) {
                             scanMethod(resolvedMethod)
                         }
                         isServiceClass(containingClass) -> {
-                            // 다른 ServiceImpl 호출 추적
                             if (containingClass.isInterface) {
-                                val scope = GlobalSearchScope.projectScope(project)
                                 ClassInheritorsSearch.search(containingClass, scope, true).findAll()
                                     .forEach { implClass ->
                                         val implMethod = implClass.findMethodBySignature(resolvedMethod, true)

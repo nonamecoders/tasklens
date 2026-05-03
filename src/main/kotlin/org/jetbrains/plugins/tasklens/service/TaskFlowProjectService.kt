@@ -8,10 +8,11 @@ import org.jetbrains.plugins.tasklens.scan.TaskFlowAnalyzer
 @Service(Service.Level.PROJECT)
 class TaskFlowProjectService(private val project: Project) {
 
+    private val analyzer = TaskFlowAnalyzer(project)
     private var cachedResults: List<ScheduledTaskInfo> = emptyList()
 
     fun analyze(): List<ScheduledTaskInfo> {
-        cachedResults = TaskFlowAnalyzer(project).analyze()
+        cachedResults = analyzer.analyze()
         return cachedResults
     }
 

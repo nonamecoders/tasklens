@@ -11,6 +11,8 @@ class ScheduledMethodScanner(private val project: Project) {
 
     companion object {
         private const val SCHEDULED_FQN = "org.springframework.scheduling.annotation.Scheduled"
+        private const val UNSET_NUMERIC = "0"
+        private const val DISABLED_NUMERIC = "-1"
     }
 
     fun scan(): List<ScheduledTaskInfo> {
@@ -27,20 +29,22 @@ class ScheduledMethodScanner(private val project: Project) {
                         val annotation = method.getAnnotation(SCHEDULED_FQN)
                         if (annotation != null) {
                             val cron = annotation.findAttributeValue("cron")?.text?.extractStringValue()
-                            val fixedDelay = annotation.findAttributeValue("fixedDelay")?.text
-                            val fixedRate = annotation.findAttributeValue("fixedRate")?.text
-                            val fixedDelayString = annotation.findAttributeValue("fixedDelayString")?.text?.extractStringValue()
-                            val fixedRateString = annotation.findAttributeValue("fixedRateString")?.text?.extractStringValue()
+                            val fixedDelay = resolveScheduleValue(
+                                annotation.findAttributeValue("fixedDelay")?.text,
+                                annotation.findAttributeValue("fixedDelayString")?.text?.extractStringValue()
+                            )
+                            val fixedRate = resolveScheduleValue(
+                                annotation.findAttributeValue("fixedRate")?.text,
+                                annotation.findAttributeValue("fixedRateString")?.text?.extractStringValue()
+                            )
 
                             results.add(
                                 ScheduledTaskInfo(
                                     className = psiClass.name ?: "Unknown",
                                     methodName = method.name,
                                     cron = cron?.takeIf { it.isNotBlank() },
-                                    fixedDelay = (fixedDelay?.takeIf { it != "0" && it != "-1" && it.isNotBlank() }
-                                        ?: fixedDelayString?.takeIf { it.isNotBlank() }),
-                                    fixedRate = (fixedRate?.takeIf { it != "0" && it != "-1" && it.isNotBlank() }
-                                        ?: fixedRateString?.takeIf { it.isNotBlank() }),
+                                    fixedDelay = fixedDelay,
+                                    fixedRate = fixedRate,
                                     serviceCalls = emptyList(),
                                     navigationElement = smartPointerManager.createSmartPsiElementPointer(method)
                                 )
@@ -54,6 +58,10 @@ class ScheduledMethodScanner(private val project: Project) {
 
         return results
     }
+
+    private fun resolveScheduleValue(numericText: String?, stringText: String?): String? =
+        numericText?.takeIf { it != UNSET_NUMERIC && it != DISABLED_NUMERIC && it.isNotBlank() }
+            ?: stringText?.takeIf { it.isNotBlank() }
 
     private fun String.extractStringValue(): String = trim().removeSurrounding("\"")
 }

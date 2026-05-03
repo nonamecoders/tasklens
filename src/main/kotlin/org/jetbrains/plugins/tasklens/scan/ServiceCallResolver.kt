@@ -15,6 +15,7 @@ class ServiceCallResolver(private val project: Project) {
     fun resolve(method: PsiMethod): List<ServiceCallInfo> {
         val results = mutableListOf<ServiceCallInfo>()
         val smartPointerManager = SmartPointerManager.getInstance(project)
+        val scope = GlobalSearchScope.projectScope(project)
 
         method.body?.accept(object : JavaRecursiveElementVisitor() {
             override fun visitMethodCallExpression(expression: PsiMethodCallExpression) {
@@ -25,8 +26,6 @@ class ServiceCallResolver(private val project: Project) {
                 if (!isServiceClass(containingClass)) return
 
                 if (containingClass.isInterface) {
-                    // 인터페이스로 resolve된 경우 프로젝트 내 모든 구현체를 찾아 각각 표시
-                    val scope = GlobalSearchScope.projectScope(project)
                     val inheritors = ClassInheritorsSearch.search(containingClass, scope, true).findAll()
                     if (inheritors.isEmpty()) {
                         results.add(serviceCallInfo(containingClass, resolvedMethod, smartPointerManager))

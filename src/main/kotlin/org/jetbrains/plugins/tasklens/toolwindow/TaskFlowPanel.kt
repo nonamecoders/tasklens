@@ -23,10 +23,10 @@ import javax.swing.tree.DefaultTreeModel
 class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
 
     private val tree = Tree()
+    private val refreshButton = JButton("Refresh")
     private val projectService = project.service<TaskFlowProjectService>()
 
     init {
-        val refreshButton = JButton("Refresh")
         refreshButton.addActionListener { refresh() }
 
         tree.isRootVisible = true
@@ -43,7 +43,7 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
     }
 
     fun refresh() {
-        val button = (getComponent(0) as JButton).also { it.isEnabled = false }
+        refreshButton.isEnabled = false
         Thread {
             try {
                 val tasks = ReadAction.compute<List<ScheduledTaskInfo>, Throwable> {
@@ -51,7 +51,7 @@ class TaskFlowPanel(private val project: Project) : JPanel(BorderLayout()) {
                 }
                 SwingUtilities.invokeLater { updateTree(tasks) }
             } finally {
-                SwingUtilities.invokeLater { button.isEnabled = true }
+                SwingUtilities.invokeLater { refreshButton.isEnabled = true }
             }
         }.start()
     }
