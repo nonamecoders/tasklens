@@ -1,10 +1,11 @@
 package org.jetbrains.plugins.tasklens.scan
 
 import com.intellij.openapi.project.Project
-import com.intellij.openapi.roots.ProjectRootManager
-import com.intellij.psi.PsiJavaFile
-import com.intellij.psi.PsiManager
+import com.intellij.psi.JavaPsiFacade
+import com.intellij.psi.PsiMethod
 import com.intellij.psi.SmartPointerManager
+import com.intellij.psi.search.GlobalSearchScope
+import com.intellij.psi.search.searches.AnnotatedMembersSearch
 import org.jetbrains.plugins.tasklens.model.ScheduledTaskInfo
 
 class ScheduledMethodScanner(private val project: Project) {
@@ -16,47 +17,37 @@ class ScheduledMethodScanner(private val project: Project) {
     }
 
     fun scan(): List<ScheduledTaskInfo> {
-        val results = mutableListOf<ScheduledTaskInfo>()
-        val psiManager = PsiManager.getInstance(project)
         val smartPointerManager = SmartPointerManager.getInstance(project)
-        val fileIndex = ProjectRootManager.getInstance(project).fileIndex
+        val scope = GlobalSearchScope.projectScope(project)
+        val annotationClass = JavaPsiFacade.getInstance(project).findClass(SCHEDULED_FQN, scope)
+            ?: return emptyList()
 
-        fileIndex.iterateContent { vFile ->
-            if (vFile.extension == "java" && fileIndex.isInSourceContent(vFile)) {
-                val psiFile = psiManager.findFile(vFile) as? PsiJavaFile
-                psiFile?.classes?.forEach { psiClass ->
-                    psiClass.methods.forEach { method ->
-                        val annotation = method.getAnnotation(SCHEDULED_FQN)
-                        if (annotation != null) {
-                            val cron = annotation.findAttributeValue("cron")?.text?.extractStringValue()
-                            val fixedDelay = resolveScheduleValue(
-                                annotation.findAttributeValue("fixedDelay")?.text,
-                                annotation.findAttributeValue("fixedDelayString")?.text?.extractStringValue()
-                            )
-                            val fixedRate = resolveScheduleValue(
-                                annotation.findAttributeValue("fixedRate")?.text,
-                                annotation.findAttributeValue("fixedRateString")?.text?.extractStringValue()
-                            )
+        return AnnotatedMembersSearch.search(annotationClass, scope)
+            .filterIsInstance<PsiMethod>()
+            .mapNotNull { method ->
+                val psiClass = method.containingClass ?: return@mapNotNull null
+                val annotation = method.getAnnotation(SCHEDULED_FQN) ?: return@mapNotNull null
 
-                            results.add(
-                                ScheduledTaskInfo(
-                                    className = psiClass.name ?: "Unknown",
-                                    methodName = method.name,
-                                    cron = cron?.takeIf { it.isNotBlank() },
-                                    fixedDelay = fixedDelay,
-                                    fixedRate = fixedRate,
-                                    serviceCalls = emptyList(),
-                                    navigationElement = smartPointerManager.createSmartPsiElementPointer(method)
-                                )
-                            )
-                        }
-                    }
-                }
+                val cron = annotation.findAttributeValue("cron")?.text?.extractStringValue()
+                val fixedDelay = resolveScheduleValue(
+                    annotation.findAttributeValue("fixedDelay")?.text,
+                    annotation.findAttributeValue("fixedDelayString")?.text?.extractStringValue()
+                )
+                val fixedRate = resolveScheduleValue(
+                    annotation.findAttributeValue("fixedRate")?.text,
+                    annotation.findAttributeValue("fixedRateString")?.text?.extractStringValue()
+                )
+
+                ScheduledTaskInfo(
+                    className = psiClass.name ?: "Unknown",
+                    methodName = method.name,
+                    cron = cron?.takeIf { it.isNotBlank() },
+                    fixedDelay = fixedDelay,
+                    fixedRate = fixedRate,
+                    serviceCalls = emptyList(),
+                    navigationElement = smartPointerManager.createSmartPsiElementPointer(method)
+                )
             }
-            true
-        }
-
-        return results
     }
 
     private fun resolveScheduleValue(numericText: String?, stringText: String?): String? {
