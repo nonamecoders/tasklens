@@ -1,6 +1,6 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>org.jetbrains.plugins.tasklens</id>
+    <id>com.nonamecoders.tasklens</id>
     <name>TaskLens</name>
     <vendor>TaskLens</vendor>
 
