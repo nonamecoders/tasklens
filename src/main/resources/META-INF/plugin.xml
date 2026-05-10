@@ -11,7 +11,8 @@
         <toolWindow
             factoryClass="org.jetbrains.plugins.tasklens.toolwindow.TaskFlowToolWindowFactory"
             id="TaskLens"
-            anchor="bottom"/>
+            anchor="bottom"
+            icon="/icons/toolwindow.svg"/>
         <projectService
             serviceImplementation="org.jetbrains.plugins.tasklens.service.TaskFlowProjectService"/>
         <psi.referenceContributor language="XML"
