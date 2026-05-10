@@ -14,5 +14,7 @@
             anchor="bottom"/>
         <projectService
             serviceImplementation="org.jetbrains.plugins.tasklens.service.TaskFlowProjectService"/>
+        <psi.referenceContributor language="XML"
+            implementation="org.jetbrains.plugins.tasklens.navigation.MyBatisXmlReferenceContributor"/>
     </extensions>
 </idea-plugin>
