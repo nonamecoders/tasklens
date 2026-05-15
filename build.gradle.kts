@@ -139,11 +139,11 @@ tasks {
     register("installGitHooks") {
         group = "development"
         description = "Installs git hooks from .claude/hooks/ into .git/hooks/"
+        val hooksDir = layout.projectDirectory.dir(".claude/hooks")
+        val gitHooksDir = layout.projectDirectory.dir(".git/hooks")
         doLast {
-            val hooksDir = file(".claude/hooks")
-            val gitHooksDir = file(".git/hooks")
-            hooksDir.listFiles()?.forEach { hook ->
-                val target = gitHooksDir.resolve(hook.nameWithoutExtension)
+            hooksDir.asFile.listFiles()?.forEach { hook ->
+                val target = gitHooksDir.asFile.resolve(hook.nameWithoutExtension)
                 hook.copyTo(target, overwrite = true)
                 target.setExecutable(true)
                 println("Installed: ${hook.name} -> .git/hooks/${target.name}")
