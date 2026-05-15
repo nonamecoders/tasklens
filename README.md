@@ -74,6 +74,16 @@ MyBatis XML SQL (if applicable)
 - PSI-based static analysis
 - Gradle Kotlin DSL
 
+## Getting Started
+
+After cloning, install the git hooks once:
+
+```bash
+./gradlew installGitHooks
+```
+
+This sets up a pre-commit hook that runs a compile check before each commit.
+
 ## Building
 
 ```bash
